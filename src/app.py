@@ -1,19 +1,14 @@
 __author__ = 'Alec Nunn'
 
+from sqlite3 import dbapi2 as sqlite3
+
 from flask.ext.api import FlaskAPI
 from flask import _app_ctx_stack, stream_with_context, Response
 
-import socket, struct
+from common import *
 
-from sqlite3 import dbapi2 as sqlite3
 
 app = FlaskAPI(__name__)
-
-def get_ip(i):
-    return socket.inet_ntoa(struct.pack('!I', int(i)))
-
-def get_dec(ip):
-    return struct.unpack('!I', socket.inet_aton(ip))[0]
 
 
 def get_db():
@@ -53,7 +48,7 @@ def query(q, args):
             if not rows:
                 return
             for row in rows:
-                yield str(dict(itertools.izip(field_names, row))) + ","
+                yield str(dict(itertools.izip(field_names, row))).replace('u\'', '\'') + ","
             yield ']'
     return Response(stream_with_context(generate()))
 
@@ -62,9 +57,20 @@ def query(q, args):
 def route_org(org):
     return query('select inet_ntoa(ip) as ip from arin where org=?', [org])
 
+
 @app.route('/ip/<ip>')
 def route_ip(ip):
     return query('select inet_ntoa(ip) as ip, org from arin where ip=?', [get_dec(ip)])
+
+
+@app.route('/list/<t>')
+def route_list(t):
+    if t == 'org':
+        return query('select distinct(org) from arin', [])
+    elif t == 'ip':
+        return query('select inet_ntoa(ip) as ip from arin', [])
+    else:
+        return {'error': 'Invalid type request: \'{}\''.format(t)}
 
 
 if __name__ == '__main__':

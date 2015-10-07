@@ -70,5 +70,6 @@ if __name__ == '__main__':
     else:
         if init:
             init_db()
+            sys.exit()
         if inputfile:
             netchop()
