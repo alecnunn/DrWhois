@@ -25,6 +25,7 @@ def get_db():
         top.sqlite_db.create_function('inet_ntoa', 1, get_ip)
     return top.sqlite_db
 
+
 @app.teardown_appcontext
 def close_db(exception):
     """
@@ -34,11 +35,13 @@ def close_db(exception):
     if hasattr(top, 'sqlite_db'):
         top.sqlite_db.close()
 
+
 def query(q, args):
     """
     Queries the DB
     """
     cursor = get_db().execute(q, args)
+
     def generate():
         import itertools
         field_names = [d[0].lower() for d in cursor.description]
@@ -46,10 +49,10 @@ def query(q, args):
         while True:
             rows = cursor.fetchmany(1000)
             if not rows:
+                yield ']'
                 return
             for row in rows:
                 yield str(dict(itertools.izip(field_names, row))).replace('u\'', '\'') + ","
-            yield ']'
     return Response(stream_with_context(generate()))
 
 
@@ -70,7 +73,7 @@ def route_list(t):
     elif t == 'ip':
         return query('select inet_ntoa(ip) as ip from arin', [])
     else:
-        return {'error': 'Invalid type request: \'{}\''.format(t)}
+        return {'error': 'Invalid type request \'{}\''.format(t)}
 
 
 if __name__ == '__main__':
