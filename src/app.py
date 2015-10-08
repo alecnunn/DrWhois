@@ -20,7 +20,7 @@ def get_db():
     """
     top = _app_ctx_stack.top
     if not hasattr(top, 'sqlite_db'):
-        top.sqlite_db = sqlite3.connect('test.db')
+        top.sqlite_db = sqlite3.connect('drwhois.db')
         top.sqlite_db.row_factory = sqlite3.Row
         top.sqlite_db.create_function('inet_ntoa', 1, get_ip)
     return top.sqlite_db
