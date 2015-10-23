@@ -20,7 +20,7 @@ def get_db():
     """
     top = _app_ctx_stack.top
     if not hasattr(top, 'sqlite_db'):
-        top.sqlite_db = sqlite3.connect('drwhois.db')
+        top.sqlite_db = sqlite3.connect('test.db')
         top.sqlite_db.row_factory = sqlite3.Row
         top.sqlite_db.create_function('inet_ntoa', 1, get_ip)
     return top.sqlite_db
@@ -58,9 +58,13 @@ def query(q, args, one=False):
     return (r if r else None) if one else r
 
 
-@app.route('/org/<org>')
+@app.route('/api/org/<org>')
 def route_org(org):
-    orginfo = query('select id, shortname, fullname from orgs where shortname=?', [org], one=True)[0]
+    orginfo = query('select id, shortname, fullname from orgs where shortname=?', [org], one=True)
+    if orginfo is None:
+        return {"error": "Invalid organization '{}'".format(org)}
+    else:
+        orginfo = orginfo[0]
     netblocks = []
     for block in query('select block from netblocks where owner=? limit 25', [orginfo[0]]):
         netblocks.append(block[0])
@@ -70,7 +74,7 @@ def route_org(org):
     return {"orginfo": {"id": orginfo[0], "shortname": orginfo[1], "fullname": orginfo[2]}, "netblocks": netblocks, "ips": ips}
 
 
-@app.route('/org/<org>/<action>')
+@app.route('/api/org/<org>/<action>')
 def stream_org(org, action):
     if action == 'ips':
         return stream_query('select inet_ntoa(ips.ip) as `ip` from ips join orgs on ips.owner=orgs.id where orgs.shortname=?', [org])
@@ -79,7 +83,7 @@ def stream_org(org, action):
     else:
         return {'error': 'Invalid action \'{}\''.format(action)}
 
-@app.route('/ip/<ip>')
+@app.route('/api/ip/<ip>')
 def route_ip(ip):
     ip_q = query('select ips.owner, netblocks.block from ips join netblocks on ips.netblock=netblocks.id where ip=?', [get_dec(ip)])
     try:
@@ -89,10 +93,10 @@ def route_ip(ip):
     return {'owner': owner, 'ip': ip, 'netblock': ip_q[0][1]}
 
 
-@app.route('/list/<t>')
+@app.route('/api/list/<t>')
 def route_list(t):
     if t == 'org':
-        return query('select distinct(org) from orgs', [])
+        return stream_query('select shortname from orgs', [])
     elif t == 'ip':
         return stream_query('select inet_ntoa(ip) as ip from ips', [])
     else:
