@@ -103,6 +103,6 @@ if __name__ == '__main__':
         else:
             print('[-] Unknown command \'{}\''.format(argv))
     if not path.isfile('test.db'):
-        print('You must initialize the database by using the \'--init\' option')
+        print('[-] You must initialize the database by using the \'--init\' option')
         exit()
     app.run(port=8080, debug=True)
