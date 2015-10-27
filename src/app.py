@@ -1,6 +1,6 @@
 __author__ = 'Alec Nunn'
 
-from sqlite3 import dbapi2 as sqlite3
+import sqlite3
 
 from flask.ext.api import FlaskAPI
 from flask import _app_ctx_stack, stream_with_context, Response
@@ -18,22 +18,10 @@ def get_db():
     Don't forget to close the connection when you are finished please and
     thank you
     """
-    top = _app_ctx_stack.top
-    if not hasattr(top, 'sqlite_db'):
-        top.sqlite_db = sqlite3.connect('test.db')
-        top.sqlite_db.row_factory = sqlite3.Row
-        top.sqlite_db.create_function('inet_ntoa', 1, get_ip)
-    return top.sqlite_db
-
-
-@app.teardown_appcontext
-def close_db(exception):
-    """
-    Close DB at end of request
-    """
-    top = _app_ctx_stack.top
-    if hasattr(top, 'sqlite_db'):
-        top.sqlite_db.close()
+    sqlite_db = sqlite3.connect('test.db')
+    sqlite_db.row_factory = sqlite3.Row
+    sqlite_db.create_function('inet_ntoa', 1, get_ip)
+    return sqlite_db
 
 
 def stream_query(q, args):
@@ -104,4 +92,17 @@ def route_list(t):
 
 
 if __name__ == '__main__':
+    from sys import argv, exit
+    from os import remove, path
+    if len(argv) > 1:
+        if argv[1] == '--init':
+            if path.isfile('test.db'): remove('test.db')
+            get_db().executescript(schema)
+            print('[+] Initialized database')
+            exit()
+        else:
+            print('[-] Unknown command \'{}\''.format(argv))
+    if not path.isfile('test.db'):
+        print('You must initialize the database by using the \'--init\' option')
+        exit()
     app.run(port=8080, debug=True)
