@@ -6,8 +6,6 @@ from flask.ext.api import FlaskAPI
 from flask import _app_ctx_stack, stream_with_context, Response
 import time
 from common import *
-from Cache import Cache
-
 
 app = FlaskAPI(__name__)
 
