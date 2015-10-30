@@ -6,6 +6,7 @@ from flask.ext.api import FlaskAPI
 from flask import _app_ctx_stack, stream_with_context, Response
 import time
 from common import *
+from Cache import Cache
 
 
 app = FlaskAPI(__name__)
@@ -98,43 +99,6 @@ def route_list(t):
     else:
         return {'error': 'Invalid type request \'{}\''.format(t)}
 
-
-
-#code.activestate.com/recipes/325905-memoize-decorator-with-timeout/
-class MWT(object):
-    _caches = {}
-    _timeouts = {}
-
-    def __init__(self, timeout=5):
-        self.timeout = timeout
-
-    def collect(self):
-        for func in self._caches:
-            cache = {}
-            for key in self._caches[func]:
-                if(time.time() - self._caches[func][key][1]) < self._timeouts[func]:
-                    cache[key] = self._caches[func][key]
-            self._caches[func] = cache
-
-    def __call__(self, f):
-        self.cache = self._caches[f] = {}
-        self._timeouts[f] = self.timeout
-
-        def func(*args, **kwargs):
-            kw = kwargs.items()
-            kw.sort()
-            key = (args, tuple(kw))
-            try:
-                v = self.cache[key]
-                if(time.time() - v[1]) > self.timeout:
-                    raise KeyError
-            except KeyError:
-                v = self.cache[key] = f(*args, **kwargs), time.time()
-            return v[0]
-        func.func_name = f.func_name
-        return func
-
-@MWT(timeout=50000)
 @app.route('/api/stats')
 def route_stats():
     org_count = query('select count(distinct(shortname)) from orgs', [], one=True)[0][0]
