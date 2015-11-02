@@ -99,10 +99,19 @@ def route_list(t):
 
 @app.route('/api/stats')
 def route_stats():
-    org_count = query('select count(distinct(shortname)) from orgs', [], one=True)[0][0]
-    ip_count = query('select count(distinct(ip)) from ips', [], one=True)[0][0]
-    netblock_count = query('select count(distinct(block)) from netblocks', [], one=True)[0][0]
+    org_count = query('select count(shortname) from orgs', [], one=True)[0][0]
+    ip_count = query('select count(*) from ips', [], one=True)[0][0]
+    netblock_count = query('select count(block) from netblocks', [], one=True)[0][0]
     return {'total_orgs': org_count, 'total_ips': ip_count, 'total_netblocks': netblock_count}
+
+@app.route('/api/stats/<org>')
+def route_org_stats(org):
+    org_id = query('select id from orgs where shortname=?', [org], one=True)
+    if org_id is None:
+        return {'error': "Invalid organization '{0}'".format(org)}
+    ip_count = query('select count(*) from ips where owner=?', [org_id[0][0]])
+    netblock_count = query('select count(*) from netblocks where owner=?', [org_id[0][0]], one=True)
+    return {'total_ips': ip_count[0][0], 'total_netblocks': netblock_count[0][0], 'org': org}
 
 
 if __name__ == '__main__':
