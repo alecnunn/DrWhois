@@ -20,6 +20,7 @@ def get_db():
     sqlite_db = sqlite3.connect('test.db')
     sqlite_db.row_factory = sqlite3.Row
     sqlite_db.create_function('inet_ntoa', 1, get_ip)
+    sqlite_db.create_function('inet_aton', 1, get_dec)
     return sqlite_db
 
 
@@ -77,12 +78,16 @@ def stream_org(org, action):
 
 @app.route('/api/ip/<ip>')
 def route_ip(ip):
-    ip_q = query('select ips.owner, netblocks.block from ips join netblocks on ips.netblock=netblocks.id where ip=?', [get_dec(ip)])
-    try:
-        owner = query('select shortname from orgs where id=?', [ip_q[0][0]])[0][0]
-    except IndexError:
+    print ip
+    org_id = query('select owner from ips where ip=?', [get_dec(ip)])
+    if len(org_id) == 1:
+        org_id = org_id[0][0]
+    else:
         return {'error': 'The IP you requested does not have any associated data'}
-    return {'owner': owner, 'ip': ip, 'netblock': ip_q[0][1]}
+    owner = query('select shortname from orgs where id=?', [org_id])[0][0]
+    print owner
+    print org_id
+    return {'owner': owner, 'ip': ip}
 
 
 @app.route('/api/list/<t>')
